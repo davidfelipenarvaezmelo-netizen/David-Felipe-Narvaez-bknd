@@ -48,7 +48,7 @@ Crea un archivo `.env` basado en `.env.example`:
 ```env
 PORT=5000
 MONGODB_URI=mongodb://127.0.0.1:27017/rutas_seguras
-CLIENT_URL=http://localhost:5173
+FRONTEND_URL=http://localhost:5173
 NODE_ENV=development
 ```
 

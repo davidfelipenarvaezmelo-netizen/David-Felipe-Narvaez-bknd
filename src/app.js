@@ -1,30 +1,51 @@
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
+const mongoose = require('mongoose');
 const errorHandler = require('./middlewares/errorHandler');
+const { corsOptions } = require('./config/cors');
 
 const reportRoutes = require('./routes/reportRoutes');
 const alertRoutes = require('./routes/alertRoutes');
 
 const app = express();
 
+// Ocultar la firma del servidor
+app.disable('x-powered-by');
+
 // Middlewares
-app.use(cors({
-  origin: process.env.CLIENT_URL || '*',
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-  credentials: true,
-}));
+app.use(cors(corsOptions()));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
-// Ruta de comprobación de salud (Health Check)
-app.get('/api/health', (req, res) => {
+const DB_STATES = ['disconnected', 'connected', 'connecting', 'disconnecting'];
+
+// Liveness: responde 200 aunque la base de datos esté caída (para Render)
+app.get('/api/health/live', (req, res) => {
   res.status(200).json({
-    status: 'online',
+    status: 'alive',
+    uptimeSeconds: Math.round(process.uptime()),
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Readiness: comprueba también el estado de MongoDB
+app.get('/api/health', (req, res) => {
+  const dbState = mongoose.connection.readyState;
+  const isDatabaseUp = dbState === 1;
+
+  res.status(isDatabaseUp ? 200 : 503).json({
+    status: isDatabaseUp ? 'online' : 'degraded',
     app: 'Rutas Seguras API',
     version: '1.0.0',
     timestamp: new Date().toISOString(),
+    uptimeSeconds: Math.round(process.uptime()),
+    environment: process.env.NODE_ENV || 'development',
+    database: {
+      status: DB_STATES[dbState] || 'unknown',
+      name: mongoose.connection.name || null,
+    },
   });
 });
 
@@ -44,4 +65,3 @@ app.use((req, res, next) => {
 app.use(errorHandler);
 
 module.exports = app;
-

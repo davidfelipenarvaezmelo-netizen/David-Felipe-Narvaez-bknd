@@ -77,3 +77,48 @@ npm start
 - `urgent_safety_alert`: Difusión masiva de alertas críticas o avisos de peligro.
 - `send_panic_signal`: Recepción de señales SOS para retransmisión comunitaria (`panic_alert_received`).
 
+## Autenticación de usuarios
+
+Modelo `User` (colección `users`) con contraseña cifrada con bcrypt (12 rondas),
+roles `user` y `admin`, estado `isActive` y fecha de último acceso.
+
+### Endpoints
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| POST | /api/auth/register | Registro: `{ name?, username, email, password }` |
+| POST | /api/auth/login | Acceso: `{ identifier, password }` (usuario o correo) |
+| GET | /api/auth/me | Perfil del usuario autenticado |
+| GET | /api/auth/users | Listado paginado (solo rol admin) |
+
+Las rutas protegidas esperan la cabecera:
+
+```http
+Authorization: Bearer <token>
+```
+
+El login responde con `data.user`, `data.token`, `data.tokenType` y `data.expiresIn`.
+
+### Variables de entorno
+
+```env
+JWT_SECRET=secreto_largo_y_aleatorio
+JWT_EXPIRES_IN=7d
+ADMIN_NAME=Administrador
+ADMIN_USERNAME=admin
+ADMIN_EMAIL=admin@rutaseguras.local
+ADMIN_PASSWORD=admin2026*
+```
+
+`JWT_SECRET` es obligatorio cuando `NODE_ENV=production`: si falta, el servidor no
+inicia. Para generar uno:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+```
+
+### Administrador por defecto
+
+Al arrancar, `seedAdmin` crea el usuario `admin` con la contraseña `admin2026*`
+si no existe. Cambia `ADMIN_PASSWORD` en producción para no dejar las
+credenciales por defecto.

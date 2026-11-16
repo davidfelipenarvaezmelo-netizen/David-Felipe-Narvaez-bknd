@@ -7,6 +7,7 @@ const { corsOptions } = require('./config/cors');
 
 const reportRoutes = require('./routes/reportRoutes');
 const alertRoutes = require('./routes/alertRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 
@@ -50,6 +51,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // Rutas de la API
+app.use('/api/auth', authRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/alerts', alertRoutes);
 

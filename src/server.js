@@ -9,11 +9,7 @@ const { socketCorsOptions, getAllowedOrigins } = require('./config/cors');
 
 const PORT = process.env.PORT || 5000;
 
-// En producción el secreto JWT es obligatorio (no usar el valor de desarrollo)
-if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
-  console.error('[Auth] Falta la variable JWT_SECRET. El servidor no puede iniciar de forma segura.');
-  process.exit(1);
-}
+// El secreto JWT se resuelve en src/config/jwt.js (temporal si no está definido)
 
 // Crear servidor HTTP integrado con Express
 const server = http.createServer(app);
@@ -31,15 +27,7 @@ setupSocket(io);
 
 // Iniciar base de datos y levantar servidor
 const startServer = async () => {
-  await connectDB();
-
-  // Usuario administrador por defecto (si la base está disponible)
-  try {
-    await seedDefaultAdmin();
-  } catch (error) {
-    console.error(`[Seed Error] No se pudo crear el administrador: ${error.message}`);
-  }
-
+  // 1) El servidor HTTP arranca de inmediato para que Render no aborte el despliegue
   server.listen(PORT, () => {
     console.log(`====================================================`);
     console.log(`🚀 Servidor de Rutas Seguras iniciado en el puerto: ${PORT}`);
@@ -48,6 +36,17 @@ const startServer = async () => {
     console.log(`🌐 Orígenes CORS permitidos: ${getAllowedOrigins().join(', ')}`);
     console.log(`====================================================`);
   });
+
+  // 2) La conexión a Mongo se resuelve en segundo plano con reintentos
+  const connection = await connectDB();
+
+  if (connection) {
+    try {
+      await seedDefaultAdmin();
+    } catch (error) {
+      console.error(`[Seed Error] No se pudo crear el administrador: ${error.message}`);
+    }
+  }
 };
 
 startServer();

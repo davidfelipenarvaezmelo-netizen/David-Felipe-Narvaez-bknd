@@ -47,6 +47,10 @@ app.get('/api/health', (req, res) => {
       status: DB_STATES[dbState] || 'unknown',
       name: mongoose.connection.name || null,
     },
+    auth: {
+      jwtSecretConfigured: Boolean(process.env.JWT_SECRET),
+      jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    },
   });
 });
 
